@@ -41,9 +41,9 @@ class MaskPredictor:
         masked_image = image[0] * np.expand_dims(mask, axis=-1)
         return masked_image
 
-    def process_image(self, image_path):
+    def process_image(self, image_path, threshold=0.5):
         image = self.preprocess_image(image_path)
         predicted_mask = self.predict_mask(image)
-        processed_mask = self.post_process_mask(predicted_mask)
+        processed_mask = self.post_process_mask(predicted_mask, threshold)
         masked_image = self.apply_mask_to_image(image, processed_mask)
         return masked_image
