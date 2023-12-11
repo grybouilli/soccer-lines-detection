@@ -1,11 +1,24 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.losses import binary_crossentropy
 import cv2
 
+def dice_metric(y_true, y_pred):
+    numerator = 2 * tf.reduce_sum(y_true * y_pred)
+    denominator = tf.reduce_sum(y_true + y_pred)
+    
+    return (numerator + 1) / (denominator + 1)
+
+def combined_loss(y_true, y_pred):
+    return 0.5 * binary_crossentropy(y_true, y_pred) + 0.5 * (1 - dice_metric(y_true, y_pred))
+
 class MaskPredictor:
+
+    
     def __init__(self, model_path):
-        self.model = tf.keras.models.load_model(model_path)
+        self.model = tf.keras.models.load_model(model_path, custom_objects={'combined_loss': combined_loss, 'dice_metric': dice_metric})
+
         
     def preprocess_image(self, image_path, target_size=(448, 768)):
         image = load_img(image_path, target_size=target_size)
@@ -32,8 +45,10 @@ class MaskPredictor:
         dilated_mask = cv2.dilate(eroded_mask, kernel, iterations=1)
 
         # Apply threshold after morphological operations
-        dilated_mask[dilated_mask > threshold] = 1
-        dilated_mask[dilated_mask <= threshold] = 0
+        # dilated_mask[dilated_mask > threshold] = 1
+        # dilated_mask[dilated_mask <= threshold] = 0
+
+        cv2.imwrite("dilated_mask.png", dilated_mask * 255)
 
         return dilated_mask
 
